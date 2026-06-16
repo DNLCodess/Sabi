@@ -1,26 +1,236 @@
 @import "tailwindcss";
 
+/* ── Brand tokens ─────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --primary: #7C6FFF;
+  --primary-hover: #6A5CF0;
+  --primary-subtle: #EFEDFF;
+  --secondary: #5B8DEF;
+  --accent: #3FB8AC;
+  --accent-soft: #4FD1C5;
+  --lavender: #B8A6FF;
+  --sky: #D8E8FF;
+  --mint: #DFFBF8;
+
+  --background: #FAFBFF;
+  --surface: #FFFFFF;
+  --surface-raised: #FFFFFF;
+  --border: #E8ECF5;
+  --border-subtle: #F0F3FA;
+
+  --text-primary: #1F2937;
+  --text-secondary: #6B7280;
+  --text-disabled: #9CA3AF;
+
+  --success: #1E9E8A;
+  --success-fg: #FFFFFF;
+  --warning: #B7791F;
+  --warning-fg: #FFFFFF;
+  --warning-soft: #FBBF24;
+  --crisis: #D9534F;
+  --crisis-fg: #FFFFFF;
+  --info: #5B8DEF;
+  --info-fg: #FFFFFF;
+
+  --ring: rgba(124, 111, 255, 0.45);
+
+  /* Gradients */
+  --grad-primary: linear-gradient(135deg, #4FD1C5 0%, #5B8DEF 50%, #7C6FFF 100%);
+  --grad-dream: linear-gradient(135deg, #A7C7FF 0%, #B8A6FF 50%, #F1E8FF 100%);
+  --grad-aurora: linear-gradient(135deg, #4FD1C5 0%, #7C6FFF 100%);
+
+  /* Typography — references Next.js font CSS variables injected on <html> */
+  --font-display: var(--font-poppins, 'Poppins'), sans-serif;
+  --font-body: var(--font-inter, 'Inter'), sans-serif;
+
+  /* Spacing (4px grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+
+  /* Radius */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+  --r-full: 999px;
+
+  /* Elevation */
+  --shadow-1: 0 8px 40px rgba(124, 111, 255, 0.12);
+  --shadow-2: 0 4px 16px rgba(31, 41, 55, 0.10);
+  --shadow-3: 0 24px 60px rgba(31, 41, 55, 0.18);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark {
+  --background: #0D1025;
+  --surface: #161B38;
+  --surface-raised: #1C2244;
+  --border: #2A3160;
+  --text-primary: #F8FAFC;
+  --text-secondary: #AAB2D5;
+  --primary: #9A90FF;
+  --accent: #4FD1C5;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Fluid type scale ─────────────────────────────────────────────── */
+.text-display {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 6vw + 1rem, 4.5rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.text-h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 4.5vw + 0.5rem, 3rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.text-h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3.5vw + 0.5rem, 2.25rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.text-h3 {
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 2vw + 0.5rem, 1.75rem);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.text-body-lg {
+  font-size: 1.125rem;
+  line-height: 1.65;
+}
+
+.text-body {
+  font-size: 1rem;
+  line-height: 1.6;
+  max-width: 65ch;
+}
+
+.text-small {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.text-caption {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* ── Focus ────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+  border-radius: var(--r-sm);
+}
+
+/* ── Motion ───────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Utility classes ──────────────────────────────────────────────── */
+.grad-text {
+  background: var(--grad-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.surface-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-1);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: 0 var(--space-8);
+  background: var(--grad-aurora);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--r-full);
+  cursor: pointer;
+  transition: opacity 150ms ease, transform 100ms ease;
+  text-decoration: none;
+}
+
+.btn-primary:hover {
+  opacity: 0.92;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: 0 var(--space-6);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 500;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-full);
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease;
+  text-decoration: none;
+}
+
+.btn-ghost:hover {
+  border-color: var(--primary);
+  color: var(--primary);
 }
