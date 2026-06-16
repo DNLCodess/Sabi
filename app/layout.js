@@ -1,5 +1,7 @@
 import { Poppins, Inter } from 'next/font/google'
 import './globals.css'
+import ServiceWorkerInit from '@/components/ServiceWorkerInit'
+import OfflineBanner from '@/components/OfflineBanner'
 
 const poppins = Poppins({
   variable: '--font-poppins',
@@ -21,12 +23,22 @@ export const metadata = {
   icons: {
     icon: '/favicon.png',
   },
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'SABI',
+  },
 }
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${poppins.variable} ${inter.variable} h-full`}>
-      <body className="min-h-full flex flex-col antialiased">{children}</body>
+      <body className="min-h-full flex flex-col antialiased">
+        <ServiceWorkerInit />
+        <OfflineBanner />
+        {children}
+      </body>
     </html>
   )
 }
