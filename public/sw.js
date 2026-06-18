@@ -1,30 +1,41 @@
-// SABI Service Worker
-// Strategy:
-//   /_next/static/**  → cache-first  (content-hashed, safe forever)
-//   /_next/image/**   → cache-first
-//   Google Fonts      → cache-first
-//   Our images        → cache-first
-//   Navigation (HTML) → network-first, fallback to cached page, fallback to /
-//   Supabase API      → network-only (fire-and-forget; silent failure is fine)
+// SABI Service Worker — offline-first for low-connectivity Nigerian campuses
+//
+// Cache strategy per resource type:
+//   /_next/static/**        → cache-first  (content-hashed, safe forever)
+//   /_next/image/**         → cache-first
+//   Google Fonts            → cache-first
+//   Our images              → cache-first
+//   HTML navigation         → network-first → cached page → root shell
+//   Next.js RSC payloads    → network-first → cached RSC
+//   Supabase API            → network-only  (anon push, silent offline fail)
+//   Everything else         → network-first → cached
 
-const SHELL_VERSION = 'sabi-v2'
+const SHELL_VERSION = 'sabi-v3'
 const SHELL_CACHE   = `${SHELL_VERSION}-shell`
 const RUNTIME_CACHE = `${SHELL_VERSION}-runtime`
 
-// Routes to warm-cache on install so the app works immediately offline
-const PRECACHE_ROUTES = ['/', '/check-in', '/screen', '/results']
-const PRECACHE_ASSETS = ['/logo.png', '/favicon.png', '/ai bot face.png']
+const PRECACHE_ROUTES = ['/', '/check-in', '/screen', '/results', '/sos']
+const PRECACHE_ASSETS = [
+  '/logo.png',
+  '/ai%20bot%20face.png',
+]
 
-// ── Install ──────────────────────────────────────────────────────────
+// ── Install: resilient — one failure must not abort the whole install ─
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(SHELL_CACHE)
-      .then(cache => cache.addAll([...PRECACHE_ROUTES, ...PRECACHE_ASSETS]))
+      .then(async (cache) => {
+        // Use allSettled so a single 404 doesn't kill the install
+        await Promise.allSettled([
+          ...PRECACHE_ROUTES.map(url => cache.add(new Request(url, { credentials: 'same-origin' })).catch(() => {})),
+          ...PRECACHE_ASSETS.map(url => cache.add(new Request(url, { credentials: 'same-origin' })).catch(() => {})),
+        ])
+      })
       .then(() => self.skipWaiting())
   )
 })
 
-// ── Activate: remove old caches ──────────────────────────────────────
+// ── Activate: clean up stale caches from previous shell versions ─────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
@@ -37,7 +48,7 @@ self.addEventListener('activate', (event) => {
   )
 })
 
-// ── Fetch ────────────────────────────────────────────────────────────
+// ── Fetch ─────────────────────────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
   const { request } = event
   const url = new URL(request.url)
@@ -45,10 +56,10 @@ self.addEventListener('fetch', (event) => {
   // Only intercept GET
   if (request.method !== 'GET') return
 
-  // Supabase: always go to network (push is fire-and-forget; reads fail silently offline)
+  // Supabase: network-only (push is fire-and-forget; offline queue in supabase.js handles it)
   if (url.hostname.includes('supabase.co')) return
 
-  // Next.js content-hashed static chunks — safe to cache forever
+  // Next.js content-hashed static assets: cache-first, populate on first load
   if (url.pathname.startsWith('/_next/static/')) {
     event.respondWith(cacheFirst(request, RUNTIME_CACHE))
     return
@@ -60,7 +71,18 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // Google Fonts (stylesheet + font files)
+  // Next.js RSC data fetches (client-side navigation payloads)
+  // These arrive as XHR/fetch with Accept: text/x-component
+  if (
+    request.headers.get('RSC') === '1' ||
+    request.headers.get('Next-Router-Prefetch') === '1' ||
+    url.searchParams.has('_rsc')
+  ) {
+    event.respondWith(networkFirstRSC(request))
+    return
+  }
+
+  // Google Fonts (stylesheet + woff2 files): cache-first
   if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
     event.respondWith(cacheFirst(request, RUNTIME_CACHE))
     return
@@ -72,19 +94,18 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // HTML page navigations: network-first, cached fallback, then root shell
+  // HTML page navigations: network-first, fall back to cached page, then root shell
   if (request.mode === 'navigate') {
     event.respondWith(networkFirstNav(request))
     return
   }
 })
 
-// ── Strategy helpers ─────────────────────────────────────────────────
+// ── Strategy helpers ──────────────────────────────────────────────────
 
 async function cacheFirst(request, cacheName) {
   const cached = await caches.match(request)
   if (cached) return cached
-
   try {
     const response = await fetch(request)
     if (response.ok) {
@@ -93,8 +114,7 @@ async function cacheFirst(request, cacheName) {
     }
     return response
   } catch {
-    // Truly offline and not in cache — return empty 503
-    return new Response('Offline', { status: 503 })
+    return new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } })
   }
 }
 
@@ -107,7 +127,27 @@ async function networkFirstNav(request) {
     }
     return response
   } catch {
-    // Exact route cached → serve it; otherwise fall back to root (React handles routing)
-    return (await caches.match(request)) ?? (await caches.match('/'))
+    // Try exact URL, then try root shell (React app handles client-side routing)
+    return (
+      (await caches.match(request)) ??
+      (await caches.match('/')) ??
+      new Response('<h1>SABI is offline</h1><p>Please reconnect to the internet.</p>', {
+        status: 503,
+        headers: { 'Content-Type': 'text/html' },
+      })
+    )
+  }
+}
+
+async function networkFirstRSC(request) {
+  try {
+    const response = await fetch(request)
+    if (response.ok) {
+      const cache = await caches.open(RUNTIME_CACHE)
+      cache.put(request, response.clone())
+    }
+    return response
+  } catch {
+    return (await caches.match(request)) ?? new Response(null, { status: 503 })
   }
 }

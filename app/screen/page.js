@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import AyoAvatar from '@/components/AyoAvatar'
+import SabiAvatar from '@/components/SabiAvatar'
 import AnswerChip from '@/components/AnswerChip'
 import ProgressBar from '@/components/ProgressBar'
 import { ArrowLeft } from 'lucide-react'
@@ -60,11 +60,17 @@ export default function ScreenPage() {
 
   useEffect(() => {
     const ids = JSON.parse(sessionStorage.getItem('sabi_domains') ?? '[]')
-    const m = sessionStorage.getItem('sabi_mode') ?? 'self'
+    const m   = sessionStorage.getItem('sabi_mode') ?? 'self'
     if (!ids.length) { router.replace('/check-in'); return }
+
+    // Pick up PHQ-4 pre-answers seeded by /check-in gateway phase
+    const seeded = JSON.parse(sessionStorage.getItem('sabi_answers') ?? '{}')
+    sessionStorage.removeItem('sabi_answers')
+
     setDomainIds(ids)
     setMode(m)
-    const first = buildQueue(ids, {})[0] ?? null
+    setAnswersByDomain(seeded)
+    const first = buildQueue(ids, seeded)[0] ?? null
     setDisplayedQuestion(first)
     setLoaded(true)
   }, [router])
@@ -183,10 +189,10 @@ export default function ScreenPage() {
           </span>
         </div>
 
-        {/* Ayo bubble */}
+        {/* SABI bubble */}
         <div style={{ display: 'flex', gap: 14, marginBottom: 28 }}>
           <div style={{ paddingTop: 2 }}>
-            <AyoAvatar size={42} />
+            <SabiAvatar size={42} />
           </div>
           <div style={{
             flex: 1,

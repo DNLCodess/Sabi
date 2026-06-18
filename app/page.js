@@ -1,8 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ShieldCheck, HeartHandshake, CheckCircle2 } from "lucide-react";
-import AyoAvatar from "@/components/AyoAvatar";
+import SabiAvatar from "@/components/SabiAvatar";
 import QRSection from "./QRSection";
+import ProfileReminderBanner from "./ProfileReminderBanner";
 
 export default function LandingPage() {
   return (
@@ -26,9 +27,9 @@ export default function LandingPage() {
         }}
       >
         {/* Logo */}
-        {/* Ayo avatar */}
+        {/* SABI avatar */}
         <div style={{ marginBottom: 28 }}>
-          <AyoAvatar size={88} glow />
+          <SabiAvatar size={88} glow />
         </div>
         {/* Headline */}
         <h1
@@ -121,6 +122,9 @@ export default function LandingPage() {
 
       {/* ── QR section ───────────────────────────────────────────── */}
       <QRSection />
+
+      {/* ── Profile reminder banner (shown if not yet linked) ────── */}
+      <ProfileReminderBanner />
 
       {/* ── Sticky CTA bar (single source of truth for both mobile + desktop) ── */}
       <div

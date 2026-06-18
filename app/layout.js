@@ -2,6 +2,8 @@ import { Poppins, Inter } from 'next/font/google'
 import './globals.css'
 import ServiceWorkerInit from '@/components/ServiceWorkerInit'
 import OfflineBanner from '@/components/OfflineBanner'
+import SOSButton from '@/components/SOSButton'
+import AnonSessionInit from '@/components/AnonSessionInit'
 
 const poppins = Poppins({
   variable: '--font-poppins',
@@ -35,8 +37,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${poppins.variable} ${inter.variable} h-full`}>
       <body className="min-h-full flex flex-col antialiased">
+        <AnonSessionInit />
         <ServiceWorkerInit />
         <OfflineBanner />
+        <SOSButton />
         {children}
       </body>
     </html>

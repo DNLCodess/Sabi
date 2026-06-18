@@ -3,12 +3,14 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import AyoAvatar from '@/components/AyoAvatar'
+import SabiAvatar from '@/components/SabiAvatar'
 import CrisisBar from '@/components/CrisisBar'
 import ResultBand from '@/components/ResultBand'
 import BarrierPanel from '@/components/BarrierPanel'
 import MicroInterventionCard from '@/components/MicroInterventionCard'
+import ProfileOptIn from '@/components/ProfileOptIn'
 import { BARRIER_PANEL, RESOURCES, PEER_SUPPORT_TIPS } from '@/lib/resources'
+import { pushCheckinHistory, incrementCheckinCount } from '@/lib/profile'
 import { HeartHandshake, PhoneCall, BookOpen, CheckCircle2, AlertCircle, Users } from 'lucide-react'
 
 const ICON_MAP = { HeartHandshake, PhoneCall, BookOpen, CheckCircle2, AlertCircle }
@@ -22,7 +24,11 @@ export default function ResultsPage() {
   useEffect(() => {
     const raw = sessionStorage.getItem('sabi_result')
     if (!raw) { router.replace('/'); return }
-    setResult(JSON.parse(raw))
+    const parsed = JSON.parse(raw)
+    setResult(parsed)
+    // Push to linked check-in history + increment local count
+    incrementCheckinCount()
+    pushCheckinHistory({ tier: parsed.overall_tier, mode: parsed.mode, domains: parsed.domains })
   }, [router])
 
   if (!result) return null
@@ -33,7 +39,7 @@ export default function ResultsPage() {
     mode,
     domains,
     fired_rules,
-    ayo_message,
+    sabi_message,
     micro_intervention,
     resources_to_show,
   } = result
@@ -71,9 +77,9 @@ export default function ResultsPage() {
         {/* Crisis bar */}
         {safety_triggered && <CrisisBar />}
 
-        {/* Ayo message */}
+        {/* SABI message */}
         <div style={{ display: 'flex', gap: 14, marginBottom: 32, alignItems: 'flex-start' }}>
-          <AyoAvatar size={44} />
+          <SabiAvatar size={44} />
           <div style={{
             flex: 1,
             background: 'var(--surface)',
@@ -83,7 +89,7 @@ export default function ResultsPage() {
             boxShadow: 'var(--shadow-2)',
           }}>
             <p className="text-body-lg" style={{ margin: 0, color: 'var(--text-primary)' }}>
-              {ayo_message}
+              {sabi_message}
             </p>
           </div>
         </div>
@@ -209,6 +215,13 @@ export default function ResultsPage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Profile opt-in — shown after results if not yet linked */}
+        {!isFriend && (
+          <div style={{ marginBottom: 28 }}>
+            <ProfileOptIn variant="full" />
           </div>
         )}
 
